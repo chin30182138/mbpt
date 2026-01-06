@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>仙人指路 - V72.0 (IG神獸卡‧一鍵下載版)</title>
+    <title>仙人指路 - V73.0 (iPhone 完美存圖版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
@@ -23,7 +23,7 @@
         }
 
         /* --- 1. 首頁 (Landing) --- */
-        #landing { text-align: center; padding: 40px 20px; width: 100%; max-width: 400px; margin-top: 10vh; }
+        #landing { text-align: center; padding: 40px 20px; width: 100%; max-width: 400px; margin-top: 5vh; }
         .logo { width: 120px; margin-bottom: 20px; filter: drop-shadow(0 0 10px rgba(212,175,55,0.4)); }
         .title { font-size: 32px; font-weight: 900; color: var(--gold); margin-bottom: 5px; letter-spacing: 2px; }
         .sub { font-size: 14px; color: #888; margin-bottom: 40px; }
@@ -62,7 +62,7 @@
             margin-bottom: 20px;
         }
 
-        .card-logo { height: 40px; opacity: 0.8; margin-bottom: 20px; }
+        .card-header img { height: 40px; opacity: 0.8; margin-bottom: 20px; }
         
         .beast-icon {
             width: 120px; height: 120px; margin: 0 auto 15px auto;
@@ -122,7 +122,7 @@
         
         <div class="date-badge" id="todayInfo">正在連結天時...</div>
 
-        <button class="btn-main" onclick="startTest()">🔮 立即測驗</button>
+        <button class="btn-main" onclick="startTest()">🔮 立即測驗性格</button>
         <p style="margin-top:20px; font-size:12px; color:#555;">今日已有 892 人領取指引</p>
     </div>
 
@@ -134,7 +134,7 @@
     <div id="result-area">
         
         <div id="capture-card">
-            <img src="logo.png" class="card-logo">
+            <div class="card-header"><img src="logo.png" style="height:40px; opacity:0.8; margin-bottom:20px;"></div>
             
             <div class="beast-icon" id="rIcon">🐉</div>
             <h1 class="r-name" id="rName">滄海青龍</h1>
@@ -165,7 +165,7 @@
                 仙人指路占卜研究學會 · 專屬命書
             </div>
         </div>
-        <button class="btn-download" onclick="downloadCard()">📸 下載神獸卡 (發IG)</button>
+        <button class="btn-download" onclick="downloadCard()">📸 儲存神獸卡 (iPhone 適用)</button>
         <div style="text-align:center;">
             <button class="btn-retry" onclick="location.reload()">↺ 重新測驗</button>
         </div>
@@ -239,12 +239,8 @@
         const element = wxMap[randBranch]; 
 
         // 2. 決定神獸 (依據今日日干)
-        // 甲乙(0,1)起青龍... 戊(4)起勾陳, 己(5)起螣蛇...
         const dayIdx = stems.indexOf(todayGan);
-        // 六獸起例口訣：甲乙起青龍，丙丁朱雀，戊勾陳，己螣蛇，庚辛白虎，壬癸玄武
         const startBeastIdx = [0,0,1,1,2,3,4,4,5,5][dayIdx]; 
-        
-        // 假設世爻在第幾爻？(隨機 1-6)
         const shiPos = Math.floor(Math.random() * 6); 
         const beastIdx = (startBeastIdx + shiPos) % 6;
         const myBeast = animals[beastIdx];
@@ -256,10 +252,8 @@
         document.getElementById('rIcon').innerText = iconDB[myBeast];
         document.getElementById('rName').innerText = artName;
         document.getElementById('rBranch').innerText = `世爻:${randBranch}(${element})`;
-        
         document.getElementById('rDesc').innerText = `本命神獸為【${myBeast}】，落在【${element}】地。${descDB[element]} 展現出${myBeast}的特質。`;
         
-        // 隨機金句
         const quotes = [
             "「萬物皆有時，你的光芒終將被看見。」",
             "「動靜有時，適時的轉身是為了走更長遠的路。」",
@@ -274,32 +268,83 @@
         document.getElementById('result-area').style.display = 'block';
     }
 
-    // --- 4. 截圖下載 (關鍵修正) ---
+    // --- 4. iPhone 專用存圖邏輯 ---
     function downloadCard() {
         const card = document.getElementById('capture-card');
         const btn = document.querySelector('.btn-download');
         const originalText = btn.innerText;
-        btn.innerText = "⏳ 正在生成精美卡片...";
+        
+        btn.innerText = "⏳ 正在生成卡片...";
         
         html2canvas(card, {
-            scale: 2, // 2倍解析度，確保清晰
-            backgroundColor: "#141414", // 確保背景不是透明
-            useCORS: true, // 允許讀取 Logo
+            scale: 3, // 高解析度
+            backgroundColor: "#141414", 
+            useCORS: true,
             logging: false
         }).then(canvas => {
-            // 建立下載連結
-            const link = document.createElement('a');
-            link.download = `仙人指路_${document.getElementById('rName').innerText}.png`;
-            link.href = canvas.toDataURL("image/png");
-            link.click();
+            const imgData = canvas.toDataURL("image/png");
+
+            // 建立滿版遮罩
+            const overlay = document.createElement('div');
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.backgroundColor = 'rgba(0,0,0,0.9)';
+            overlay.style.zIndex = '9999';
+            overlay.style.display = 'flex';
+            overlay.style.flexDirection = 'column';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.padding = '20px';
+            overlay.style.boxSizing = 'border-box';
+
+            // 建立圖片
+            const img = new Image();
+            img.src = imgData;
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = '70%';
+            img.style.borderRadius = '10px';
+            img.style.boxShadow = '0 0 20px rgba(212,175,55,0.5)';
+            img.style.marginBottom = '20px';
+
+            // 提示文字
+            const tip = document.createElement('p');
+            tip.innerText = "👆 請長按圖片 -> 加入照片";
+            tip.style.color = '#fff';
+            tip.style.fontSize = '20px';
+            tip.style.fontWeight = 'bold';
+            tip.style.marginBottom = '20px';
+            tip.style.textShadow = '0 0 5px #000';
+
+            // 關閉按鈕
+            const closeBtn = document.createElement('button');
+            closeBtn.innerText = "關閉視窗";
+            closeBtn.style.padding = '12px 30px';
+            closeBtn.style.fontSize = '16px';
+            closeBtn.style.borderRadius = '50px';
+            closeBtn.style.border = 'none';
+            closeBtn.style.background = '#fff';
+            closeBtn.style.color = '#000';
+            closeBtn.style.fontWeight = 'bold';
+            closeBtn.style.cursor = 'pointer';
+            closeBtn.onclick = () => { document.body.removeChild(overlay); };
+
+            overlay.appendChild(img);
+            overlay.appendChild(tip);
+            overlay.appendChild(closeBtn);
+            document.body.appendChild(overlay);
+
             btn.innerText = originalText;
+
         }).catch(err => {
-            alert("截圖失敗，請手動截圖。\n" + err);
+            alert("截圖失敗，請重新整理網頁。\n" + err);
             btn.innerText = originalText;
         });
     }
 
-    // 啟動初始化
+    // 啟動
     initDate();
 
 </script>
