@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>仙人指路 - V70.0 (天時正宗‧一鍵存圖版)</title>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
+    <style>
+        :root {
+            --bg: #050505;
+            --card-bg: #141414;
+            --gold: #d4af37;
+            --gold-light: #f1c40f;
+            --blue: #2980b9;
+            --text: #eee;
+        }
+        body {
+            font-family: "Microsoft JhengHei", "Heiti TC", serif;
+            background-color: var(--bg); color: var(--text);
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+        }
+
+        /* --- 1. 首頁 --- */
+        #landing { text-align: center; padding: 40px 20px; width: 100%; max-width: 400px; }
+        .logo { width: 120px; margin-bottom: 20px; filter: drop-shadow(0 0 10px rgba(212,175,55,0.4)); }
+        .title { font-size: 32px; font-weight: 900; color: var(--gold); margin-bottom: 5px; letter-spacing: 2px; }
+        .sub { font-size: 14px; color: #888; margin-bottom: 40px; }
+        
+        .date-badge { 
+            background: #222; border: 1px solid #444; color: var(--gold); 
+            padding: 8px 15px; border-radius: 20px; font-size: 14px; margin-bottom: 30px; display: inline-block;
+        }
+
+        .btn-main {
+            background: linear-gradient(135deg, #b8860b, #d4af37);
+            color: #000; font-size: 20px; font-weight: bold;
+            padding: 15px 50px; border: none; border-radius: 50px;
+            cursor: pointer; box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+            animation: pulse 2s infinite; width: 100%;
+        }
+        .btn-main:active { transform: scale(0.98); }
+
+        /* --- 2. 結果顯示區 --- */
+        #result-area { display: none; padding: 20px; width: 100%; max-width: 400px; }
+
+        /* 這張卡片是要被截圖的區域 */
+        #capture-card {
+            background: var(--card-bg); 
+            border: 2px solid var(--gold);
+            border-radius: 20px; 
+            padding: 30px 20px; 
+            text-align: center;
+            position: relative; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            /* 加上背景紋理，增加質感 */
+            background-image: radial-gradient(circle at 50% 0%, #2a2a2a 0%, #141414 70%);
+        }
+
+        .card-header img { height: 40px; opacity: 0.8; margin-bottom: 10px; }
+        
+        .beast-avatar {
+            width: 140px; height: 140px; margin: 0 auto 15px auto;
+            border: 3px solid var(--gold); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 60px; background: #000;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+        }
+
+        .r-name { 
+            font-size: 36px; font-weight: 900; color: var(--gold); 
+            margin: 5px 0; font-family: "KaiTi", serif; letter-spacing: 2px;
+        }
+        .r-meta { font-size: 13px; color: #888; margin-bottom: 20px; letter-spacing: 1px; text-transform: uppercase; }
+        .r-meta span { color: var(--gold); margin: 0 5px; }
+
+        .r-desc-box { 
+            text-align: left; background: rgba(255,255,255,0.05); 
+            padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 3px solid var(--gold);
+        }
+        .r-title { color: var(--gold); font-size: 13px; font-weight: bold; margin-bottom: 5px; }
+        .r-text { font-size: 14px; color: #ddd; line-height: 1.5; }
+
+        .r-guide { 
+            font-size: 16px; font-weight: bold; color: #fff; font-style: italic; 
+            margin-top: 20px; padding-top: 15px; border-top: 1px dashed #444;
+        }
+
+        .card-footer { margin-top: 25px; font-size: 11px; color: #555; }
+
+        /* 按鈕區 */
+        .action-bar { margin-top: 25px; display: flex; gap: 10px; }
+        .btn-download {
+            flex: 2; background: #fff; color: #000; border: none; padding: 12px;
+            font-weight: bold; border-radius: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 5px;
+        }
+        .btn-retry {
+            flex: 1; background: transparent; border: 1px solid #555; color: #888;
+            padding: 12px; border-radius: 10px; cursor: pointer;
+        }
+
+        /* 讀取動畫 */
+        #loading { display: none; margin-top: 50px; text-align: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid var(--gold); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(212,175,55,0.4); } 70% { box-shadow: 0 0 0 15px rgba(212,175,55,0); } 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0); } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="landing">
+        <img src="logo.png" alt="Logo" class="logo">
+        <div class="title">神獸七十二型人格</div>
+        <div class="sub">仙人指路 · 測測你的本命守護神</div>
+        
+        <div class="date-badge" id="todayInfo">載入日期中...</div>
+
+        <button class="btn-main" onclick="startTest()">🔮 立即測驗性格</button>
+        <p style="margin-top:20px; font-size:12px; color:#555;">今日已有 892 人領取指引</p>
+    </div>
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <p style="color:var(--gold);">正在連結天時磁場...</p>
+    </div>
+
+    <div id="result-area">
+        <div id="capture-card">
+            <div class="card-header"><img src="logo.png"></div>
+            
+            <div class="beast-avatar" id="rIcon">🐲</div>
+            <h1 class="r-name" id="rName">滄海青龍</h1>
+            <div class="r-meta">
+                日干 <span id="rDayGan">甲</span> × 世爻 <span id="rBranch">子(水)</span>
+            </div>
+
+            <div class="r-desc-box">
+                <div class="r-title">【性格原型】</div>
+                <div class="r-text" id="rDesc">
+                    如深潛於滄海之中的龍，外表平靜，內心湧動著強大能量。善於觀察局勢，等待時機一飛沖天。
+                </div>
+            </div>
+
+            <div class="r-desc-box" style="border-left-color:var(--blue); background:rgba(41, 128, 185, 0.1);">
+                <div class="r-title" style="color:var(--blue);">【仙人指路】</div>
+                <div class="r-text" id="rAdvice">
+                    水能載舟亦能覆舟。你的智慧是雙面刃，多一點真誠，運勢將如海納百川。
+                </div>
+            </div>
+
+            <div class="r-guide" id="rQuote">「潛龍勿用，陽氣潛藏。」</div>
+            
+            <div class="card-footer">
+                仙人指路占卜研究學會 · 阿青師親批<br>
+                <span id="rDate">2026.01.06</span>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn-retry" onclick="location.reload()">↺ 重測</button>
+            <button class="btn-download" onclick="downloadCard()">📥 下載神獸卡</button>
+        </div>
+    </div>
+
+<script>
+    // --- 1. 天時系統 (自動抓日干) ---
+    const stems = ["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"];
+    const branches = ["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"];
+    const animals = ["青龍","朱雀","勾陳","螣蛇","白虎","玄武"];
+    
+    // 五行定義
+    const wxMap = {
+        "子":"水", "亥":"水",
+        "寅":"木", "卯":"木",
+        "巳":"火", "午":"火",
+        "辰":"濕土", "戌":"燥土", "丑":"濕土", "未":"燥土", // 細分土
+        "申":"金", "酉":"金"
+    };
+
+    let todayGan = ""; 
+    let todayStr = "";
+
+    function initDate() {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = now.getMonth() + 1;
+        const d = now.getDate();
+        
+        // 簡易日干支公式 (基準 2024/1/1 = 甲子)
+        const base = new Date(2024, 0, 1);
+        const diff = Math.round((new Date(y, m-1, d) - base) / 86400000);
+        let idx = diff % 60; if(idx < 0) idx += 60;
+        
+        todayGan = stems[idx % 10]; // 取得今日天干
+        const todayZhi = branches[idx % 12];
+        
+        todayStr = `${y}.${String(m).padStart(2,'0')}.${String(d).padStart(2,'0')}`;
+        document.getElementById('todayInfo').innerText = `📅 今日天時：${todayGan}${todayZhi}日`;
+        document.getElementById('rDate').innerText = todayStr;
+    }
+
+    // --- 2. 雅名資料庫 (72型生成邏輯) ---
+    // 邏輯：[神獸][五行] -> 雅名
+    const nameDB = {
+        "青龍": { "水":"滄海青龍", "濕土":"盤龍臥野", "燥土":"鎮山青龍", "木":"雲林青龍", "火":"騰雲青龍", "金":"劍脊青龍" },
+        "朱雀": { "水":"映波朱雀", "濕土":"棲梧朱雀", "燥土":"丹山朱雀", "木":"銜枝朱雀", "火":"涅槃朱雀", "金":"流金朱雀" },
+        "勾陳": { "水":"深潭勾陳", "濕土":"厚德勾陳", "燥土":"鎮嶽勾陳", "木":"古木勾陳", "火":"煉土勾陳", "金":"披甲勾陳" },
+        "螣蛇": { "水":"雲霧螣蛇", "濕土":"遁地螣蛇", "燥土":"荒漠螣蛇", "木":"翠林螣蛇", "火":"幻火螣蛇", "金":"金鱗螣蛇" },
+        "白虎": { "水":"霜雪白虎", "濕土":"伏野白虎", "燥土":"曠野白虎", "木":"伏林白虎", "火":"烈焰白虎", "金":"肅殺白虎" },
+        "玄武": { "水":"深淵玄武", "濕土":"玄冥玄武", "燥土":"岩甲玄武", "木":"隱林玄武", "火":"陰火玄武", "金":"鐵壁玄武" }
+    };
+
+    const descDB = {
+        "水": "擁有如水般的適應力，善於應對變化，智慧深沉但有時思慮過重。",
+        "濕土": "性格溫潤包容，善於滋養他人，但有時過於被動。",
+        "燥土": "性格堅毅穩重，原則性強，值得信賴但稍顯固執。",
+        "木": "充滿生機與仁愛之心，積極向上，具有開創力。",
+        "火": "散發光與熱，具有強烈感染力，熱情奔放但情緒起伏大。",
+        "金": "風格犀利果斷，執行力強，講求效率與原則。"
+    };
+
+    const iconDB = {"青龍":"🐉", "朱雀":"🦅", "勾陳":"⛰️", "螣蛇":"🐍", "白虎":"🐯", "玄武":"🐢"};
+
+    // --- 3. 測驗邏輯 ---
+    function startTest() {
+        document.getElementById('landing').style.display = 'none';
+        document.getElementById('loading').style.display = 'block';
+        setTimeout(calcResult, 1500);
+    }
+
+    function calcResult() {
+        // 1. 隨機起卦 (模擬 6 爻) -> 找出世爻
+        // 簡化：直接隨機產生一個「世爻地支」
+        // (在完整版是：隨機卦 -> 查表得世爻 -> 得地支。這裡MVP直接抽地支，效果一樣)
+        const randBranch = branches[Math.floor(Math.random() * 12)]; 
+        const element = wxMap[randBranch]; // 查五行
+
+        // 2. 決定神獸 (依據今日日干)
+        // 甲乙(0,1)起青龍(0)...
+        const dayIdx = stems.indexOf(todayGan);
+        const startBeastIdx = [0,0,1,1,2,3,4,4,5,5][dayIdx]; // 六獸起例口訣
+        // 假設世爻在第幾爻？(隨機 1-6)
+        const shiPos = Math.floor(Math.random() * 6); 
+        const beastIdx = (startBeastIdx + shiPos) % 6;
+        const myBeast = animals[beastIdx];
+
+        // 3. 組合雅名
+        const artName = nameDB[myBeast][element] || `${element}行${myBeast}`;
+        
+        // 4. 渲染
+        document.getElementById('rIcon').innerText = iconDB[myBeast];
+        document.getElementById('rName').innerText = artName;
+        document.getElementById('rDayGan').innerText = todayGan;
+        document.getElementById('rBranch').innerText = `${randBranch} (${element})`;
+        
+        document.getElementById('rDesc').innerText = `本命神獸為【${myBeast}】，落在【${element}】地。${descDB[element]} 展現出${myBeast}的特質。`;
+        
+        // 金句庫 (隨機)
+        const quotes = [
+            "「萬物皆有時，你的光芒終將被看見。」",
+            "「動靜有時，適時的轉身是為了走更長遠的路。」",
+            "「光芒雖美亦需燈油，保持內心平靜。」",
+            "「亢龍有悔，學習在高峰時低頭。」",
+            "「地勢坤，君子以厚德載物。」"
+        ];
+        document.getElementById('rQuote').innerText = quotes[Math.floor(Math.random()*quotes.length)];
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('result-area').style.display = 'block';
+    }
+
+    // --- 4. 截圖下載功能 (核心價值) ---
+    function downloadCard() {
+        const card = document.getElementById('capture-card');
+        const btn = document.querySelector('.btn-download');
+        btn.innerText = "⏳ 處理中...";
+        
+        html2canvas(card, {
+            scale: 2, // 高解析度
+            backgroundColor: "#141414", // 確保背景色正確
+            useCORS: true // 允許跨域圖片
+        }).then(canvas => {
+            // 建立下載連結
+            const link = document.createElement('a');
+            link.download = `仙人指路_${document.getElementById('rName').innerText}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            btn.innerText = "📥 下載神獸卡";
+        });
+    }
+
+    // 啟動
+    initDate();
+
+</script>
+</body>
+</html>
